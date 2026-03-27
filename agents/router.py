@@ -59,7 +59,10 @@ GUIDELINES:
 - For general greetings or meta questions, respond warmly and explain your capabilities.
 
 CATEGORY FILTER: {category_filter}
-If a category filter is active (not "All Categories"), scope your analysis to that category when relevant. Mention the active filter in your response."""
+If a category filter is active (not "All Categories"):
+- ALWAYS pass category="{category_filter}" when calling search_products or get_category_performance.
+- For other tools, only analyse products in the "{category_filter}" category.
+- Mention the active filter in your response so the user knows results are scoped."""
 
 
 # Briefing prompt: generates the daily startup briefing
@@ -188,26 +191,27 @@ class ProductIntelligenceAgent:
         }
 
     # ----- Specialised intent handlers -----
-    # Each handler scopes the available tools to its domain so the LLM
-    # only sees relevant functions, improving accuracy and demonstrating
-    # proper router-to-handler dispatch.
+    # Each handler scopes the available tools to its domain.
+    # search_products is included in every handler so the LLM can resolve
+    # product names to IDs before calling domain-specific tools
+    # (e.g., "What's the margin on Formal Blue Blazer Top?" needs a name→ID lookup first).
 
     def _handle_inventory(self, query: str) -> tuple[str, list[dict]]:
         """Handle INVENTORY intent: stock levels, stockout risk, restock needs."""
         inventory_schemas = [s for s in TOOL_SCHEMAS
-                            if s["function"]["name"] in ("get_inventory_health", "generate_restock_alert")]
+                            if s["function"]["name"] in ("search_products", "get_inventory_health", "generate_restock_alert")]
         return self._call_with_tools(query, inventory_schemas)
 
     def _handle_pricing(self, query: str) -> tuple[str, list[dict]]:
         """Handle PRICING intent: margins, positioning, profitability."""
         pricing_schemas = [s for s in TOOL_SCHEMAS
-                          if s["function"]["name"] in ("get_pricing_analysis", "get_category_performance")]
+                          if s["function"]["name"] in ("search_products", "get_pricing_analysis", "get_category_performance")]
         return self._call_with_tools(query, pricing_schemas)
 
     def _handle_reviews(self, query: str) -> tuple[str, list[dict]]:
         """Handle REVIEWS intent: customer feedback, ratings, sentiment."""
         review_schemas = [s for s in TOOL_SCHEMAS
-                         if s["function"]["name"] in ("get_review_insights",)]
+                         if s["function"]["name"] in ("search_products", "get_review_insights")]
         return self._call_with_tools(query, review_schemas)
 
     def _handle_catalog(self, query: str) -> tuple[str, list[dict]]:
@@ -267,12 +271,18 @@ class ProductIntelligenceAgent:
 
         tool_calls_log = []
 
+        # Inject category filter into the user query so the LLM enforces it
+        # in tool arguments, not just as a soft suggestion in the system prompt
+        effective_query = query
+        if self.category_filter != "All Categories":
+            effective_query = f"[Category filter active: {self.category_filter}] {query}"
+
         messages = [
             {"role": "system", "content": AGENT_SYSTEM_PROMPT.format(
                 category_filter=self.category_filter
             )},
             *self.messages[-6:],  # Recent conversation for follow-ups
-            {"role": "user", "content": query},
+            {"role": "user", "content": effective_query},
         ]
 
         # First call: LLM decides which tool(s) to invoke from the scoped set
