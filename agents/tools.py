@@ -14,10 +14,10 @@ from difflib import SequenceMatcher
 # ---------------------------------------------------------------------------
 # Data Loading
 # ---------------------------------------------------------------------------
-# Load CSVs from project root (relative path — run.py ensures correct cwd)
-_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-products_df = pd.read_csv(os.path.join(_root, "retailmind_products.csv"))
-reviews_df = pd.read_csv(os.path.join(_root, "retailmind_reviews.csv"))
+# Load CSVs from project root using relative paths
+# CSVs are placed in the project root as required by submission guidelines
+products_df = pd.read_csv("retailmind_products.csv")
+reviews_df = pd.read_csv("retailmind_reviews.csv")
 
 # Cache for LLM-generated review summaries (avoids repeated API calls)
 _review_cache: dict = {}
