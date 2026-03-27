@@ -105,7 +105,7 @@ def get_inventory_health(product_id: str) -> str:
         days_to_stockout = round(stock / daily_sales, 1)
         if days_to_stockout < 7:
             status = "Critical"
-        elif days_to_stockout < 14:
+        elif days_to_stockout <= 14:
             status = "Low"
         else:
             status = "Healthy"
@@ -315,7 +315,7 @@ def get_category_performance(category: str) -> str:
             days = row["stock_quantity"] / row["avg_daily_sales"]
             if days < 7:
                 critical_count += 1
-            elif days < 14:
+            elif days <= 14:
                 low_count += 1
 
     # Top 3 revenue products: estimated daily revenue = price x avg_daily_sales

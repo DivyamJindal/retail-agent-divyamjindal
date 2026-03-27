@@ -53,8 +53,8 @@ INVENTORY  PRICING   REVIEWS    CATALOG    GENERAL
 ### Installation
 
 ```bash
-git clone https://github.com/DivyamJindal/ai-agent-exam.git
-cd ai-agent-exam
+git clone https://github.com/DivyamJindal/retail-agent-ugdsai25015.git
+cd retail-agent-ugdsai25015
 pip install -r requirements.txt
 ```
 

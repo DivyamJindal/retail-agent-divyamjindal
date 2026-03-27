@@ -47,6 +47,7 @@ Your role is to help StyleCraft's product manager (Priya) make data-driven decis
 
 GUIDELINES:
 - Always use the available tools to answer data questions — never guess or make up numbers.
+- All prices are in Indian Rupees (INR). Always use the ₹ symbol for currency, never $ or USD.
 - Present data clearly with product IDs, names, and specific metrics.
 - When a product has Critical or Low stock status, emphasise the urgency.
 - When margin is below 20%, flag it as a concern and suggest corrective action.
@@ -64,6 +65,8 @@ If a category filter is active (not "All Categories"), scope your analysis to th
 # Briefing prompt: generates the daily startup briefing
 BRIEFING_SYSTEM_PROMPT = """You are RetailMind AI generating a Daily Briefing for StyleCraft's product manager.
 
+IMPORTANT: All prices and revenue figures are in Indian Rupees (INR). Always use the ₹ symbol, never $ or other currencies.
+
 Format the briefing as a clear, actionable report with these EXACT sections:
 
 🚨 CRITICAL STOCK ALERTS
@@ -71,7 +74,7 @@ List the top 3 most critically low-stock products with:
 - Product ID and name
 - Current stock and daily sales rate
 - Estimated days to stockout
-- Revenue at risk
+- Revenue at risk (in ₹)
 
 ⭐ PRODUCT QUALITY FLAG
 Show the worst-rated product with:
@@ -139,27 +142,79 @@ class ProductIntelligenceAgent:
 
         return intent
 
-    def process_query(self, query: str) -> tuple[str, str]:
-        """Main entry point: classify intent → call tools → generate response.
+    def process_query(self, query: str) -> dict:
+        """Main entry point: classify intent → dispatch to specialized handler.
+
+        The Router Pattern works as follows:
+        1. LLM classifies intent into one of 5 categories
+        2. Based on the classified intent, the query is dispatched to a
+           specialised handler that has access ONLY to the tools relevant
+           to that intent domain
+        3. The handler uses OpenAI function calling with its scoped tools
 
         Returns:
-            (response_text, classified_intent)
+            dict with keys: response, intent, tool_calls (list of {name, args, result})
         """
         # Step 1: Router — classify intent via LLM
         intent = self.classify_intent(query)
 
-        # Step 2: For GENERAL intent, respond without tools
+        # Step 2: Dispatch to the specialised handler based on classified intent
+        # Each handler receives only the tools relevant to its domain
         if intent == "GENERAL":
-            return self._handle_general(query), intent
+            return {
+                "response": self._handle_general(query),
+                "intent": intent,
+                "tool_calls": [],
+            }
+        elif intent == "INVENTORY":
+            response, tool_calls = self._handle_inventory(query)
+        elif intent == "PRICING":
+            response, tool_calls = self._handle_pricing(query)
+        elif intent == "REVIEWS":
+            response, tool_calls = self._handle_reviews(query)
+        elif intent == "CATALOG":
+            response, tool_calls = self._handle_catalog(query)
+        else:
+            response, tool_calls = self._call_with_tools(query, TOOL_SCHEMAS)
 
-        # Step 3: For data intents, use function calling with all tools
-        response = self._call_with_tools(query)
-
-        # Step 4: Update conversation memory
+        # Step 3: Update conversation memory
         self.messages.append({"role": "user", "content": query})
         self.messages.append({"role": "assistant", "content": response})
 
-        return response, intent
+        return {
+            "response": response,
+            "intent": intent,
+            "tool_calls": tool_calls,
+        }
+
+    # ----- Specialised intent handlers -----
+    # Each handler scopes the available tools to its domain so the LLM
+    # only sees relevant functions, improving accuracy and demonstrating
+    # proper router-to-handler dispatch.
+
+    def _handle_inventory(self, query: str) -> tuple[str, list[dict]]:
+        """Handle INVENTORY intent: stock levels, stockout risk, restock needs."""
+        inventory_schemas = [s for s in TOOL_SCHEMAS
+                            if s["function"]["name"] in ("get_inventory_health", "generate_restock_alert")]
+        return self._call_with_tools(query, inventory_schemas)
+
+    def _handle_pricing(self, query: str) -> tuple[str, list[dict]]:
+        """Handle PRICING intent: margins, positioning, profitability."""
+        pricing_schemas = [s for s in TOOL_SCHEMAS
+                          if s["function"]["name"] in ("get_pricing_analysis", "get_category_performance")]
+        return self._call_with_tools(query, pricing_schemas)
+
+    def _handle_reviews(self, query: str) -> tuple[str, list[dict]]:
+        """Handle REVIEWS intent: customer feedback, ratings, sentiment."""
+        review_schemas = [s for s in TOOL_SCHEMAS
+                         if s["function"]["name"] in ("get_review_insights",)]
+        return self._call_with_tools(query, review_schemas)
+
+    def _handle_catalog(self, query: str) -> tuple[str, list[dict]]:
+        """Handle CATALOG intent: product search, category overviews."""
+        catalog_schemas = [s for s in TOOL_SCHEMAS
+                          if s["function"]["name"] in ("search_products", "get_category_performance")]
+        return self._call_with_tools(query, catalog_schemas)
 
     def _handle_general(self, query: str) -> str:
         """Handle greetings and meta questions using LLM knowledge."""
@@ -189,17 +244,29 @@ class ProductIntelligenceAgent:
 
         return result
 
-    def _call_with_tools(self, query: str) -> str:
+    def _call_with_tools(self, query: str, scoped_schemas: list = None) -> tuple[str, list[dict]]:
         """Use OpenAI function calling to invoke the right tool(s) and
         generate a natural language response from the results.
 
-        The LLM receives the tool schemas and decides which function(s) to
-        call based on the query. This is proper tool-calling with schemas.
+        The LLM receives only the scoped tool schemas (filtered by the
+        router's intent classification) so it picks from the correct
+        domain-specific tools.
 
         Parameters:
+            query          →  The user's question
+            scoped_schemas →  Tool schemas scoped to the classified intent
             temperature=0.1  →  Low for consistent, data-driven responses
             max_tokens=1000  →  Enough for detailed analysis with formatting
+
+        Returns:
+            (response_text, tool_calls_log) where tool_calls_log is a list of
+            {"name": ..., "args": ..., "result": ...} dicts for UI display.
         """
+        if scoped_schemas is None:
+            scoped_schemas = TOOL_SCHEMAS
+
+        tool_calls_log = []
+
         messages = [
             {"role": "system", "content": AGENT_SYSTEM_PROMPT.format(
                 category_filter=self.category_filter
@@ -208,14 +275,14 @@ class ProductIntelligenceAgent:
             {"role": "user", "content": query},
         ]
 
-        # First call: LLM decides which tool(s) to invoke
+        # First call: LLM decides which tool(s) to invoke from the scoped set
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
             temperature=0.1,     # Very low: data analysis should be consistent
             max_tokens=1000,     # Room for detailed formatted responses
             top_p=0.95,          # Slight nucleus sampling for natural phrasing
             messages=messages,
-            tools=TOOL_SCHEMAS,
+            tools=scoped_schemas,
             tool_choice="auto",  # LLM decides whether and which tool to call
         )
 
@@ -236,6 +303,13 @@ class ProductIntelligenceAgent:
                 else:
                     tool_result = json.dumps({"error": f"Unknown tool: {fn_name}"})
 
+                # Log for UI display
+                tool_calls_log.append({
+                    "name": fn_name,
+                    "args": fn_args,
+                    "result": tool_result,
+                })
+
                 # Add tool result to messages
                 messages.append({
                     "role": "tool",
@@ -252,10 +326,10 @@ class ProductIntelligenceAgent:
                 messages=messages,
             )
 
-            return final_response.choices[0].message.content
+            return final_response.choices[0].message.content, tool_calls_log
 
         # If no tool was called, return the direct response
-        return assistant_message.content or "I couldn't process that query. Please try rephrasing."
+        return (assistant_message.content or "I couldn't process that query. Please try rephrasing."), tool_calls_log
 
     def generate_daily_briefing(self) -> str:
         """Generate the startup Daily Briefing by calling tools and
