@@ -1,0 +1,31 @@
+product_id,product_name,category,price,cost,stock_quantity,avg_daily_sales,return_rate,avg_rating,review_count,launch_date,reorder_level
+SC001,Classic White Oxford Shirt,Tops,1299,480,45,2.3,0.04,4.2,47,2023-03-15,15
+SC002,Striped Cotton Crop Top,Tops,799,280,8,4.1,0.12,3.6,23,2023-08-20,10
+SC003,Formal Blue Blazer Top,Tops,2199,850,62,1.8,0.03,4.5,89,2022-11-10,20
+SC004,Bohemian Printed Kurti,Tops,999,360,3,5.8,0.22,2.8,12,2024-01-05,10
+SC005,Relaxed Linen Shirt,Tops,1499,550,38,2.9,0.05,4.1,38,2023-05-22,12
+SC006,Embroidered Ethnic Blouse,Tops,1799,620,71,1.5,0.02,4.7,102,2022-09-14,25
+SC007,Floral Summer Dress,Dresses,1899,680,5,3.2,0.09,3.9,31,2023-04-18,12
+SC008,Little Black Evening Dress,Dresses,2999,980,29,1.4,0.06,4.3,67,2022-12-03,15
+SC009,Tiered Maxi Dress,Dresses,2499,890,14,2.6,0.15,3.2,19,2023-07-30,10
+SC010,Casual Shirt Dress,Dresses,1599,590,2,4.7,0.28,2.5,8,2024-02-12,8
+SC011,Velvet Party Dress,Dresses,3499,1200,56,0.9,0.03,4.6,115,2022-08-25,20
+SC012,High-Rise Skinny Jeans,Bottoms,1799,640,82,3.1,0.07,4.0,58,2022-07-11,25
+SC013,Palazzo Printed Pants,Bottoms,1299,450,4,2.1,0.18,3.5,17,2023-09-19,10
+SC014,Cargo Utility Trousers,Bottoms,1999,720,55,1.7,0.04,4.4,76,2023-01-28,18
+SC015,Flared Denim Shorts,Bottoms,999,340,11,3.8,0.11,3.8,29,2023-11-07,12
+SC016,Wide Leg Linen Pants,Bottoms,1699,580,33,2.4,0.06,4.2,44,2024-01-20,15
+SC017,Athletic Yoga Leggings,Bottoms,1199,380,90,4.5,0.19,3.1,14,2023-06-14,12
+SC018,Trench Coat Classic Beige,Outerwear,4999,1800,22,1.2,0.03,4.8,92,2022-10-09,10
+SC019,Oversized Hoodie Jacket,Outerwear,2499,900,41,2.8,0.08,3.7,25,2023-08-01,15
+SC020,Denim Jacket Distressed,Outerwear,2999,1050,1,3.5,0.25,2.9,11,2024-03-10,8
+SC021,Puffer Winter Coat,Outerwear,5999,2200,17,1.1,0.04,4.5,78,2022-11-22,10
+SC022,Lightweight Windbreaker,Outerwear,1999,720,63,2.0,0.14,3.4,21,2023-02-17,20
+SC023,Boho Layered Necklace Set,Accessories,699,210,38,1.6,0.07,4.1,55,2023-10-05,15
+SC024,Structured Tote Bag,Accessories,2299,780,6,2.3,0.13,3.6,18,2023-04-27,10
+SC025,Embellished Clutch Purse,Accessories,1499,510,9,1.2,0.31,2.7,9,2024-01-08,8
+SC026,Printed Silk Scarf,Accessories,899,280,52,3.1,0.05,4.3,63,2023-07-14,20
+SC027,Hoop Earrings Gold,Accessories,499,150,88,4.4,0.02,4.9,130,2022-06-30,30
+SC028,Leather Belt Brown,Accessories,799,250,44,2.2,0.09,3.8,41,2023-03-22,15
+SC029,Canvas Backpack,Accessories,1699,590,27,1.9,0.16,3.3,24,2023-12-01,12
+SC030,Knit Winter Beanie,Accessories,599,180,12,3.6,0.08,4.0,35,2023-09-10,10
